@@ -1,7 +1,10 @@
+#include <Wire.h>
 float data[4] = {0,0.1,0.2,0.1};//エンコーダの値
 unsigned long time;
 unsigned long t0;
 float dt;
+//I2C---------------
+byte val[7];
 //Approximate-------------------------------
 int n = 1;//初期設定フラグ
 float now_p_ave[3];//今の位置の平均 0:X, 1:Y, 2:Ang[rad]
@@ -12,7 +15,20 @@ boolean flag, PRE_R = true;
 int V_out[4];
 
 void setup() {
+  Wire.begin();
   Serial.begin(250000);
+}
+
+void I2Crequest(int wireRequest, int data_num){
+  Wire.requestFrom(wireRequest, 7);
+  while(Wire.available()){
+      for(i = 0; i < 7; i++){
+        val[i] = Wire.read();
+      }
+      unsigned int x = 256*val[0]+val[1];
+      int Sign = val[2] - 1;
+      float data[data_num] = Sign* double(x/100.00);//[mm/s]
+  }
 }
 
 void Approx(float Vd[4]){//センサーの位置，エンコーダーの値から自己位置を推定する．
@@ -234,6 +250,10 @@ void loop() {
   time = micros();
   dt = float(time - t0)/1000;//プログラムの周期ms
   t0 = time;
+  I2Crequest(6, 0);//I2Crequest(リクエストするArduinoの番号, dataの何番に返すか);
+  I2Crequest(7, 1);
+  I2Crequest(8, 2);
+  I2Crequest(9, 3);
   Approx(data);
   velocity();//v[0], v[1], v[2]を出す, それぞれのメカナムの出力を返す
   for (int i = 0; i < 3; i++) {
