@@ -1,3 +1,5 @@
+//コメントアウト消していく
+
 float data[4] = {0,0.1,0.2,0.1};//エンコーダの値
 
 unsigned long time;
@@ -5,53 +7,14 @@ unsigned long t0;
 float dt;
 
 //Approximate-------------------------------
-int initial_value[] = {0,0,0};//初期位置
-float now_p[3][8];//今の位置 0:X, 1:Y, 2:Ang
-//int now_p_int[3];//今の位置の平均 0:X, 1:Y, 2:Ang
-float now_p_ave[3];//今の位置の平均 0:X, 1:Y, 2:Ang[rad]//------------------
-float now_v[3][4];//今の速度 0:X, 1:Y, 2:Ang
-//float dif_v[3];//速度の違い 0:X, 1:Y, 2:Ang
-//float dif_p[3];//位置の違い 0:X, 1:Y, 2:Ang
 int n = 1;//初期設定フラグ
-float Cr[4];//センサーまでの距離
+float now_p_ave[3];//今の位置の平均 0:X, 1:Y, 2:Ang[rad]//------------------
 
 //route_trace-------------------------------
 #include "route_saka_back.h"//ROUTE_POINT_NUM, signed short route[][]
 boolean route_read = true;
 boolean flag, PRE_R = true;
-//int[][] data;
-//float now_p_ave[3] = {0,0,90};//now_p_ave[3]に変更した
-float min_m_dist;
-float pre_min_m_dist = 1000;
-int min_m_dist_num;
-float v[3];//演算した速度{x, y, θ}
-float v_t[2];//接線方向の速度
-//float v_n[2];//法線方向の速度
-float p_v[2];//比例制御
-//float d_v[2];//微分制御
-float r;//
-float pre_r;
-//float vx,vy,vx_t,vy_t,vx_n,vy_n;//接線方向と法線方向の速度
-float e, eq, pre_pos;//, pre_e, pre_eq;//編差
-float v_max[] = {10,10};//最高速度{並進, 回転}
-float slow_stop = 1.0;//slow_stop以外のところでの倍率
-float slow_start = 1.0;//slow_start以外のところでの倍率
-float slow = 5;//スローで何％まで落とすか
-//float Cr[4][2];//Censorの極座標表示[0] = x,[1] = y
-float M[4][3] = {{100, -100, 45}, //Mecanumの位置{x, y, メカナムの角度}
-               {-100, -100, 135}, 
-               {-100, 100, 225},
-               {100, 100, 315}};
-//float Mr[4][2];//Mecanuumの極座標表示[0] = x,[1] = y
-float Kt = 20/*20*/, Kp = 2/*5*/;//, Kd = 2;//2
-float Cp = 0.1, Cd = 0.5;
-float V_rotation[4][2];
-float V_translation[4][2];
-float V_resultant[4][2];
-float V_out_float[4];
 int V_out[4];
-float V_out_max=255;
-
 
 void setup() {
   Serial.begin(250000);
@@ -64,6 +27,14 @@ void Approx(float Vd[4]){//センサーの位置，エンコーダーの値か�
     {-300, 0},
     { 0,-300}
   };
+  int initial_value[] = {0,0,0};//初期位置
+  float now_p[3][8];//今の位置 0:X, 1:Y, 2:Ang
+  //int now_p_int[3];//今の位置の平均 0:X, 1:Y, 2:Ang
+  float now_v[3][4];//今の速度 0:X, 1:Y, 2:Ang
+  //float dif_v[3];//速度の違い 0:X, 1:Y, 2:Ang
+  //float dif_p[3];//位置の違い 0:X, 1:Y, 2:Ang
+  float Cr[4];//センサーまでの距離
+
   if(n == 1){//初期設定
     float Cp[4][2];
     for (int i = 0; i < 4; i++) {
@@ -122,6 +93,38 @@ void Approx(float Vd[4]){//センサーの位置，エンコーダーの値か�
 }
 
 void velocity(){
+  //int[][] data;
+  //float now_p_ave[3] = {0,0,90};//now_p_ave[3]に変更した
+  float min_m_dist;
+  float pre_min_m_dist = 1000;
+  int min_m_dist_num;
+  float v[3];//演算した速度{x, y, θ}
+  float v_t[2];//接線方向の速度
+  //float v_n[2];//法線方向の速度
+  float p_v[2];//比例制御
+  //float d_v[2];//微分制御
+  float r;//
+  float pre_r;
+  //float vx,vy,vx_t,vy_t,vx_n,vy_n;//接線方向と法線方向の速度
+  float e, eq, pre_pos;//, pre_e, pre_eq;//編差
+  float v_max[] = {10,10};//最高速度{並進, 回転}
+  float slow_stop = 1.0;//slow_stop以外のところでの倍率
+  float slow_start = 1.0;//slow_start以外のところでの倍率
+  float slow = 5;//スローで何％まで落とすか
+  //float Cr[4][2];//Censorの極座標表示[0] = x,[1] = y
+  float M[4][3] = {{100, -100, 45}, //Mecanumの位置{x, y, メカナムの角度}
+                 {-100, -100, 135}, 
+                 {-100, 100, 225},
+                 {100, 100, 315}};
+  //float Mr[4][2];//Mecanuumの極座標表示[0] = x,[1] = y
+  float Kt = 20/*20*/, Kp = 2/*5*/;//, Kd = 2;//2
+  float Cp = 0.1, Cd = 0.5;
+  float V_rotation[4][2];
+  float V_translation[4][2];
+  float V_resultant[4][2];
+  float V_out_float[4];
+  float V_out_max=255;
+
   for(int i = 0; i < ROUTE_POINT_NUM; i++){//マンハッタン距離最小値
     min_m_dist = sq(now_p_ave[0]-route[i][0])+sq(now_p_ave[1]-route[i][1]);
     if(flag){
@@ -270,17 +273,11 @@ void loop() {
   t0 = time;
   Approx(data);
   velocity();//v[0], v[1], v[2]を出す, それぞれのメカナムの出力を返す
-  for (int i = 0; i < 2; i++) {
-    Serial.print(route[min_m_dist_num][i]);
-    Serial.print("||");
-  }
   for (int i = 0; i < 3; i++) {
     Serial.print(now_p_ave[i]);
     Serial.print("|");
   }
   for (int i = 0; i < 4; i++) {
-    Serial.print(V_out_float[i]);
-    Serial.print("|");
     Serial.print(V_out[i]);
     Serial.print("|");
   }
