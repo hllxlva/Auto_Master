@@ -1,15 +1,10 @@
-//コメントアウト消していく
-
 float data[4] = {0,0.1,0.2,0.1};//エンコーダの値
-
 unsigned long time;
 unsigned long t0;
 float dt;
-
 //Approximate-------------------------------
 int n = 1;//初期設定フラグ
-float now_p_ave[3];//今の位置の平均 0:X, 1:Y, 2:Ang[rad]//------------------
-
+float now_p_ave[3];//今の位置の平均 0:X, 1:Y, 2:Ang[rad]
 //route_trace-------------------------------
 #include "route_saka_back.h"//ROUTE_POINT_NUM, signed short route[][]
 boolean route_read = true;
@@ -29,10 +24,7 @@ void Approx(float Vd[4]){//センサーの位置，エンコーダーの値か�
   };
   int initial_value[] = {0,0,0};//初期位置
   float now_p[3][8];//今の位置 0:X, 1:Y, 2:Ang
-  //int now_p_int[3];//今の位置の平均 0:X, 1:Y, 2:Ang
   float now_v[3][4];//今の速度 0:X, 1:Y, 2:Ang
-  //float dif_v[3];//速度の違い 0:X, 1:Y, 2:Ang
-  //float dif_p[3];//位置の違い 0:X, 1:Y, 2:Ang
   float Cr[4];//センサーまでの距離
 
   if(n == 1){//初期設定
@@ -52,71 +44,54 @@ void Approx(float Vd[4]){//センサーの位置，エンコーダーの値か�
     }
     n = 0;
   }
-  //float w[2];//ω
   for(int i = 0; i < 2; i++){//ω４つのセンサーから２通りωが出せる．
     now_v[2][i] = (Vd[i]+Vd[i+2])/(Cr[i]+Cr[i+2]);
   }
-  //dif_v[2] = abs(now_v[2][0]-now_v[2][1]);
-  //if(dif_v < 1){
-    for (int i = 0; i < 2; i++){
-      for (int j = 0; j < 2; j++){//速度の各成分は４通りの出し方がある
-        now_v[0][2*i+j] = (-2*i+1)*(Cr[2*i+1]*now_v[2][j]-Vd[2*i+1]);
-        now_v[1][2*i+j] = (-2*i+1)*(Vd[2*i]-Cr[2*i]*now_v[2][j]);
-      }
+  for (int i = 0; i < 2; i++){
+    for (int j = 0; j < 2; j++){//速度の各成分は４通りの出し方がある
+      now_v[0][2*i+j] = (-2*i+1)*(Cr[2*i+1]*now_v[2][j]-Vd[2*i+1]);
+      now_v[1][2*i+j] = (-2*i+1)*(Vd[2*i]-Cr[2*i]*now_v[2][j]);
     }
-    for (int i = 0; i < 2; i++){//θを求める
-      now_p[2][i] = now_p[2][i] + now_v[2][i];
-      //if(now_p[2][i] > 2*PI)now_p[2][i] - 2*PI;
+  }
+  for (int i = 0; i < 2; i++){//θを求める
+    now_p[2][i] = now_p[2][i] + now_v[2][i];
+  }
+  now_p_ave[2] = (now_p[2][0]+now_p[2][1])/2;
+  now_p_ave[2] = now_p_ave[2]*180/PI;
+  for (int i = 0; i < 4; i++){//位置の各成分はここの４通りと
+    now_p[0][i] = now_p[0][i]+(now_v[0][i]*cos(now_p[2][0])-now_v[1][i]*sin(now_p[2][0]));
+    now_p[1][i] = now_p[1][i]+(now_v[0][i]*sin(now_p[2][0])+now_v[1][i]*cos(now_p[2][0]));
+  }
+  for (int i = 0; i < 4; i++){//ここの４通りで求めることが出来る．
+    now_p[0][i+4] = now_p[0][i+4]+(now_v[0][i]*cos(now_p[2][1])-now_v[1][i]*sin(now_p[2][1]));
+    now_p[1][i+4] = now_p[1][i+4]+(now_v[0][i]*sin(now_p[2][1])+now_v[1][i]*cos(now_p[2][1]));
+  }
+  for (int i = 0; i < 2; i++){
+    now_p_ave[i] = 0;
+    for (int j = 0; j < 8; j++){
+      now_p_ave[i] = (j*now_p_ave[i]+now_p[i][j])/(j+1);//重心を求める
     }
-    //dif_p[2] = abs(now_p[2][0]-now_p[2][1]);
-    now_p_ave[2] = (now_p[2][0]+now_p[2][1])/2;
-    now_p_ave[2] = now_p_ave[2]*180/PI;
-    for (int i = 0; i < 4; i++){//位置の各成分はここの４通りと
-      now_p[0][i] = now_p[0][i]+(now_v[0][i]*cos(now_p[2][0])-now_v[1][i]*sin(now_p[2][0]));
-      now_p[1][i] = now_p[1][i]+(now_v[0][i]*sin(now_p[2][0])+now_v[1][i]*cos(now_p[2][0]));
-    }
-    for (int i = 0; i < 4; i++){//ここの４通りで求めることが出来る．
-      now_p[0][i+4] = now_p[0][i+4]+(now_v[0][i]*cos(now_p[2][1])-now_v[1][i]*sin(now_p[2][1]));
-      now_p[1][i+4] = now_p[1][i+4]+(now_v[0][i]*sin(now_p[2][1])+now_v[1][i]*cos(now_p[2][1]));
-    }
-    for (int i = 0; i < 2; i++){
-      now_p_ave[i] = 0;
-      for (int j = 0; j < 8; j++){
-        now_p_ave[i] = (j*now_p_ave[i]+now_p[i][j])/(j+1);//重心を求める
-      }
-    }
-    /*for (int i = 0; i < 3; i++){
-      if (i == 2)now_p_int[i] = 180/PI*(now_p_ave[i])*10;//精度欲しいから10倍しとく
-      else now_p_int[i] = now_p_ave[i];//0:X, 1:Y, 2:Ang をint型に直す．
-    }*/
-  //}
+  }
 }
 
 void velocity(){
-  //int[][] data;
-  //float now_p_ave[3] = {0,0,90};//now_p_ave[3]に変更した
   float min_m_dist;
   float pre_min_m_dist = 1000;
   int min_m_dist_num;
   float v[3];//演算した速度{x, y, θ}
   float v_t[2];//接線方向の速度
-  //float v_n[2];//法線方向の速度
   float p_v[2];//比例制御
-  //float d_v[2];//微分制御
   float r;//
   float pre_r;
-  //float vx,vy,vx_t,vy_t,vx_n,vy_n;//接線方向と法線方向の速度
   float e, eq, pre_pos;//, pre_e, pre_eq;//編差
   float v_max[] = {10,10};//最高速度{並進, 回転}
   float slow_stop = 1.0;//slow_stop以外のところでの倍率
   float slow_start = 1.0;//slow_start以外のところでの倍率
   float slow = 5;//スローで何％まで落とすか
-  //float Cr[4][2];//Censorの極座標表示[0] = x,[1] = y
   float M[4][3] = {{100, -100, 45}, //Mecanumの位置{x, y, メカナムの角度}
                  {-100, -100, 135}, 
                  {-100, 100, 225},
                  {100, 100, 315}};
-  //float Mr[4][2];//Mecanuumの極座標表示[0] = x,[1] = y
   float Kt = 20/*20*/, Kp = 2/*5*/;//, Kd = 2;//2
   float Cp = 0.1, Cd = 0.5;
   float V_rotation[4][2];
@@ -153,8 +128,6 @@ void velocity(){
     e = 0;
     p_v[0] = 0;
     p_v[1] = 0;
-    //d_v[0] = 0;//----
-    //d_v[1] = 0;//----
   }else{
     PRE_R = true;
     //接線方向の速度
@@ -163,8 +136,6 @@ void velocity(){
     r = sqrt(sq(v_t[0])+sq(v_t[1]));//大きさを計算
     v_t[0] = v_t[0]/r;//方向のみ
     v_t[1] = v_t[1]/r;
-    //法線方向の偏差
-    //pre_e = e;
     e = sqrt(sq((route[min_m_dist_num][1] - now_p_ave[1])*(v_t[0])+(now_p_ave[0] - route[min_m_dist_num][0])*(v_t[1]))/(sq(v_t[0])+sq(v_t[1])));
     //線のどちら側にあるかを調べる
     if(v_t[0]*(route[min_m_dist_num][1] - now_p_ave[1])+v_t[1]*(now_p_ave[0] - route[min_m_dist_num][0]) > 0){
@@ -173,24 +144,16 @@ void velocity(){
     //法線方向の比例制御
     p_v[0] = e * +v_t[1]/r;
     p_v[1] = e * -v_t[0]/r;
-    //法線方向の微分制御
-    //d_v[0] = (pre_e - e) * +v_t[1]/r;//----
-    //d_v[1] = (pre_e - e) * -v_t[0]/r;//----
   }
-  //法線方向の速度使わないと決めた
-  //v_n[0] = route[min_m_dist_num][0] - now_p_ave[0];
-  //v_n[1] = route[min_m_dist_num][1] - now_p_ave[1];
-  
   //制御の係数を代入
-  v[0] = v_t[0]*Kt + p_v[0]*Kp;// + d_v[0]*Kd;//----
-  v[1] = v_t[1]*Kt + p_v[1]*Kp;// + d_v[1]*Kd;//----
+  v[0] = v_t[0]*Kt + p_v[0]*Kp;
+  v[1] = v_t[1]*Kt + p_v[1]*Kp;
   float R = sq(v[0]) + sq(v[1]);
   if(R>sq(v_max[0])){//最高速度
     v[0] = v_max[0]*v[0]/sqrt(R);
     v[1] = v_max[0]*v[1]/sqrt(R);
   }
   //------------角度操作---------------------
-  //pre_eq = eq;
   eq = route[min_m_dist_num][2] - now_p_ave[2];
   v[2] = eq * Cp + (now_p_ave[2] - pre_pos) * Cd;//v[2] = eq * Cp - (pre_pos - now_p_ave[2]) * Cd;
   if(v[2] > v_max[1])v[2] = v_max[1];
