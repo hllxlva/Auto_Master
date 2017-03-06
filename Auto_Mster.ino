@@ -235,6 +235,18 @@ void velocity(){
   for (int i = 0; i < 4; i++){
     V_out_float[i] = V_out_float[i] / V_max * V_out_max * slow_stop * slow_start;
   }
+  //PIDせんでいいんかな…
+  /*
+  float PID_V_out_float[4];
+  float m[4]
+  float Vp = 0.3, Vd = 1, a = 1, Ve;
+  for (int i = 0; i < 4; i++){
+    Ve = V_out_float[i] - V_PID_out_float[i];
+    m[i] = Vp*Ve+(Vd/(dt+Vd/a)*(pre_PID_V_out_float[i] - V_PID_out_float[i]))
+    pre_PID_V_out_float[i] = V_PID_out_float[i]
+    V_PID_out_float[i] += m[i]
+  }
+  */
   for (int i = 0; i < 4; i++){
     if(V_out_float[i] > 0){
       V_out[i] = V_out_float[i]+0.5;
@@ -243,7 +255,6 @@ void velocity(){
       V_out[i] = -V_out[i];
     }
   }
-  //PIDせんでいいんかな…
 }
 
 void loop() {
