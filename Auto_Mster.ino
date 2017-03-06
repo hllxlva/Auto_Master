@@ -1,10 +1,8 @@
 #include <Wire.h>
-float data[4] = {0,0.1,0.2,0.1};//エンコーダの値
+float data[4] = {0,0,0,0};//エンコーダの値
 unsigned long time;
 unsigned long t0;
 float dt;
-//I2C---------------
-byte val[7];
 //Approximate-------------------------------
 int n = 1;//初期設定フラグ
 float now_p_ave[3];//今の位置の平均 0:X, 1:Y, 2:Ang[rad]
@@ -20,6 +18,7 @@ void setup() {
 }
 
 void I2Crequest(int wireRequest, int data_num){
+  byte val[7];
   Wire.requestFrom(wireRequest, 7);
   while(Wire.available()){
       for(i = 0; i < 7; i++){
@@ -38,7 +37,7 @@ void Approx(float Vd[4]){//センサーの位置，エンコーダーの値か�
     {-300, 0},
     { 0,-300}
   };
-  int initial_value[] = {0,0,0};//初期位置
+  int initial_value[] = {0,0,0};//初期位置(最初のロボットの中心の位置を{mm, mm, deg})
   float now_p[3][8];//今の位置 0:X, 1:Y, 2:Ang
   float now_v[3][4];//今の速度 0:X, 1:Y, 2:Ang
   float Cr[4];//センサーまでの距離
@@ -85,7 +84,7 @@ void Approx(float Vd[4]){//センサーの位置，エンコーダーの値か�
   for (int i = 0; i < 2; i++){
     now_p_ave[i] = 0;
     for (int j = 0; j < 8; j++){
-      now_p_ave[i] = (j*now_p_ave[i]+now_p[i][j])/(j+1);//重心を求める
+      now_p_ave[i] = (j*now_p_ave[i]+now_p[i][j])/(j+1);//値の重心を求める
     }
   }
 }
@@ -100,21 +99,21 @@ void velocity(){
   float r;//
   float pre_r;
   float e, eq, pre_pos;//, pre_e, pre_eq;//編差
-  float v_max[] = {10,10};//最高速度{並進, 回転}
+  float v_max[] = {10,10};//最高速度{並進, 回転}(並進と回転の出力割合)
   float slow_stop = 1.0;//slow_stop以外のところでの倍率
   float slow_start = 1.0;//slow_start以外のところでの倍率
-  float slow = 5;//スローで何％まで落とすか
+  float slow = 5;//スローで何％まで落とすか(slow関数が効いて進まないとき大きくする)
   float M[4][3] = {{100, -100, 45}, //Mecanumの位置{x, y, メカナムの角度}
                  {-100, -100, 135}, 
                  {-100, 100, 225},
                  {100, 100, 315}};
-  float Kt = 20/*20*/, Kp = 2/*5*/;//, Kd = 2;//2
-  float Cp = 0.1, Cd = 0.5;
+  float Kt = 20/*20*/, Kp = 2/*5*/;//, Kd = 2;//2(PID)
+  float Cp = 0.1, Cd = 0.5;//(PID)
   float V_rotation[4][2];
   float V_translation[4][2];
   float V_resultant[4][2];
   float V_out_float[4];
-  float V_out_max=255;
+  float V_out_max=255;//(アナログ出力最大)
 
   for(int i = 0; i < ROUTE_POINT_NUM; i++){//マンハッタン距離最小値
     min_m_dist = sq(now_p_ave[0]-route[i][0])+sq(now_p_ave[1]-route[i][1]);
@@ -244,6 +243,7 @@ void velocity(){
       V_out[i] = -V_out[i];
     }
   }
+  //PIDせんでいいんかな…
 }
 
 void loop() {
